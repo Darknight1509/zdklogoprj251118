@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorSpace;
 import android.graphics.Gainmap;
 import android.graphics.Paint;
 import android.graphics.Typeface;
@@ -38,6 +39,7 @@ import com.example.zdklogoprj.databinding.ActivityMainBinding;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -80,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
         List<Integer> imageResIds = Arrays.asList(
                 R.drawable.applelogo, R.drawable.canonlogo, R.drawable.cpslogo,
                 R.drawable.haseelbellogo, R.drawable.longlogo, R.drawable.nikonlogo,
-                R.drawable.whitelogohdrhdr, R.drawable.puregray, R.drawable.zdkoldlogoblack);
+                R.drawable.whitelogohdr1hdr, R.drawable.puregray, R.drawable.zdkoldlogoblack);
         ImageOptionAdapter adapter = new ImageOptionAdapter(this, imageResIds, new ImageOptionAdapter.OnImageSelectedListener() {
             @Override
             public void onImageSelected(int imageResId) {
@@ -110,6 +112,10 @@ public class MainActivity extends AppCompatActivity {
             matcher.appendReplacement(result, "R" + number + " Mark II");
         }
         matcher.appendTail(result);
+
+        if ("GFX100S".equals(input)) {
+             result = new StringBuffer("FUJI  GFX100S");
+        }
 
         return result.toString();
     }
@@ -184,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
                             break;
 
                         case 6:
-                            is = getAssets().open("whitelogohdrhdr.jpg");
+                            is = getAssets().open("whitelogohdr1hdr.jpg");
                             paint.setColor(Color.BLACK); // 水印的颜色
                             break;
                         case 7:
@@ -211,7 +217,18 @@ public class MainActivity extends AppCompatActivity {
 
                     model = replaceMarkII(model);
 
+
+
+                    EditText etLensModel = findViewById(R.id.et_lens_model);
+                    String customLensModel = etLensModel.getText().toString().trim();
+
+// 2. 原有的 EXIF 获取逻辑
                     String lensModel = exif.getAttribute(ExifInterface.TAG_LENS_MODEL);
+
+// 3. 优先级判断：如果输入框有内容，优先使用输入框的文字
+                    if (!customLensModel.isEmpty()) {
+                        lensModel = customLensModel;
+                    }
 
                     String make =  exif.getAttribute(ExifInterface.TAG_MAKE);
 
@@ -226,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
                     dateTime = datePart + " " + timeparts[1];
 
                     String focalLength = exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH);
-
+                    String focalLengthFuji = exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH);
                     String focalLength35mm = exif.getAttribute(ExifInterface.TAG_FOCAL_LENGTH_IN_35MM_FILM);
 
                     // 将字符串分割为分子和分母
@@ -261,9 +278,10 @@ public class MainActivity extends AppCompatActivity {
                         sfocalLengthResult = String.valueOf(focalLengthResult);
                     }
 
-                    if(focalLength35mm!=null){
+                    if(focalLength35mm!=null&&(!("FUJI  GFX100S".equals(model)))){
                         sfocalLengthResult = focalLength35mm;
                     }
+
 
                     String exposure = sfocalLengthResult + "mm f/" + fNumber + " " + realExposure + "s ISO"+ isoSpeedRatings;
 
@@ -305,7 +323,30 @@ public class MainActivity extends AppCompatActivity {
                             topBitmap.getHeight() + scaledBottomBitmap.getHeight(),
                             topBitmap.getConfig());
 
+// 修改前
+// Bitmap newresult = Bitmap.createBitmap(..., topBitmap.getConfig());
 
+// 修改后
+//                    Bitmap.Config config = src.getConfig();
+//                    ColorSpace colorSpace = src.getColorSpace();
+//
+//                    Bitmap newresult;
+//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && colorSpace != null) {
+//                        // 强制使用原图的色彩空间，防止色域降级导致的偏色
+//                        newresult = Bitmap.createBitmap(
+//                                Math.max(topBitmap.getWidth(), scaledBottomBitmap.getWidth()),
+//                                topBitmap.getHeight() + scaledBottomBitmap.getHeight(),
+//                                config,
+//                                true, // hasAlpha
+//                                colorSpace
+//                        );
+//                    } else {
+//                        newresult = Bitmap.createBitmap(
+//                                Math.max(topBitmap.getWidth(), scaledBottomBitmap.getWidth()),
+//                                topBitmap.getHeight() + scaledBottomBitmap.getHeight(),
+//                                config
+//                        );
+//                    }
 
 
                     // 在新的Bitmap上绘制两个Bitmap
